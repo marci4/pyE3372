@@ -9,6 +9,8 @@ Right now it's supports sms-list only
 
 ```shell script
 git clone https://github.com/dremdem/pyE3372.git
+cd pyE3372
+pipenv install
 ```
 
 ## How to use
