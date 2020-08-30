@@ -6,9 +6,9 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-requests = "2.24.0"
-pytest = "6.0.1"
-xmltodict3 = "0.0.4"
+requests = "==2.24.0"
+pytest = "==6.0.1"
+xmltodict3 = "==0.0.4"
 
 [requires]
-python_version = "3.8"
+python_version = "==3.8"
