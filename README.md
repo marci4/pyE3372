@@ -8,7 +8,7 @@ Right now it's supports sms-list only
 ## Installation 
 
 ```shell script
-git clone 
+git clone https://github.com/dremdem/pyE3372.git
 ```
 
 ## How to use
