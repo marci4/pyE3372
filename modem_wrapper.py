@@ -11,6 +11,7 @@ SESSION_PATH = 'api/webserver/SesTokInfo'
 SMS_LIST_PATH = 'api/sms/sms-list'
 SMS_DELETE_PATH = 'api/sms/delete-sms'
 SMS_COUNT_PATH = 'api/sms/sms-count'
+SMS_READ_PATH = 'api/sms/set-read'
 
 
 @dataclass()
@@ -40,6 +41,14 @@ def parse_sms_list(content):
     return sms_list
 
 
+def parse_result_from_response(response):
+    xml_as_dict = XmlTextToDict(response, ignore_namespace=True).get_dict()
+    if 'response' in xml_as_dict:
+        if xml_as_dict['response'] == "OK":
+            return True
+    return False;
+
+
 class ModemConnector(object):
     """
     Connector for modem, serving all methods
@@ -59,23 +68,26 @@ class ModemConnector(object):
         self._session = ''
         self._token = ''
         self.sms_list = []
-        self.set_session_vars()
 
     def _headers(self):
+        self.set_session_vars()
         return {'Cookie': self._session,
                 "__RequestVerificationToken": self._token,
+                "X-Requested-With": "XMLHttpRequest",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
 
     def get_sms_list(self, read_count=20):
-        xml = f"""
+        xml = """
             <?xml version="1.0" encoding="UTF-8"?>
             <request><PageIndex>1</PageIndex>
-            <ReadCount>{read_count}</ReadCount>
+            <ReadCount>{}</ReadCount>
             <BoxType>1</BoxType>
             <SortType>0</SortType>
             <Ascending>0</Ascending>
             <UnreadPreferred>0</UnreadPreferred>
-            </request>"""
+            </request>""".format(
+            read_count
+        )
         response = requests.post(self.modem_url + SMS_LIST_PATH, data=xml, headers=self._headers())
         return parse_sms_list(response.content)
 
@@ -88,11 +100,26 @@ class ModemConnector(object):
             return dictResponse["response"]["LocalUnread"]
         return None
 
-    def delete_sms(self, index):
-        xml = f"""
-                   <?xml version="1.0" encoding="UTF-8"?>
-                   <request>
-                   <Index>{index}</Index>
-                   </request>"""
+    def sms_delete(self, index):
+        xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <request>
+            <Index>{}</Index>
+            </request>""".format(
+            index
+        )
+
         response = requests.post(self.modem_url + SMS_DELETE_PATH, data=xml, headers=self._headers())
-        print(response)
+        return parse_result_from_response(response.text)
+
+    def sms_set_read(self, index):
+        xml = """
+               <?xml version="1.0" encoding="UTF-8"?>
+               <request>
+               <Index>{}</Index>
+               </request>""".format(
+            index
+        )
+        headers = self._headers()
+        response = requests.post(self.modem_url + SMS_READ_PATH, data=xml, headers=headers)
+        return parse_result_from_response(response.text)
