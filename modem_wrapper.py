@@ -14,6 +14,7 @@ SMS_LIST_PATH = 'api/sms/sms-list'
 @dataclass()
 class SMSMessage:
     index: int
+    phone_number: str
     content: str
     sms_date: datetime
 
@@ -30,6 +31,7 @@ class ModemConnector(object):
         for message in message_list:
             sms = SMSMessage(index=message.find('Index').text,
                              content=message.find('Content').text,
+                             phone_number=message.find('Phone').text,
                              sms_date=datetime.strptime(message.find('Date').text,
                                                         '%Y-%m-%d %H:%M:%S'))
             self.sms_list.append(sms)
