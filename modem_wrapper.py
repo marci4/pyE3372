@@ -84,8 +84,9 @@ class ModemConnector(object):
         dictResponse = XmlTextToDict(xml, ignore_namespace=True).get_dict()
         if inbox_type == "sim":
             return dictResponse["response"]["SimUnread"]
-        """Default is local"""
-        return dictResponse["response"]["LocalUnread"]
+        if inbox_type == "local":
+            return dictResponse["response"]["LocalUnread"]
+        return None
 
     def delete_sms(self, index):
         xml = f"""
