@@ -120,6 +120,5 @@ class ModemConnector(object):
                </request>""".format(
             index
         )
-        headers = self._headers()
-        response = requests.post(self.modem_url + SMS_READ_PATH, data=xml, headers=headers)
+        response = requests.post(self.modem_url + SMS_READ_PATH, data=xml, headers=self._headers())
         return parse_result_from_response(response.text)
