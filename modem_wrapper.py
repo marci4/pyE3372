@@ -10,7 +10,7 @@ import xml.etree.cElementTree as ET
 SESSION_PATH = 'api/webserver/SesTokInfo'
 SMS_LIST_PATH = 'api/sms/sms-list'
 SMS_DELETE_PATH = 'api/sms/delete-sms'
-SMS_COUNT_PATH = 'api/sms/smscpint'
+SMS_COUNT_PATH = 'api/sms/sms-count'
 
 
 @dataclass()
@@ -21,24 +21,29 @@ class SMSMessage:
     sms_date: datetime
 
 
+def parse_to_xml(content):
+    return ET.fromstring(content.decode('utf-8'))
+
+
+def parse_sms_list(content):
+    sms_list = []
+    root = parse_to_xml(content)
+    message_list = root.findall('*/Message')
+    for message in message_list:
+        sms = SMSMessage(index=message.find('Index').text,
+                         content=message.find('Content').text,
+                         phone_number=message.find('Phone').text,
+                         sms_date=datetime.strptime(message.find('Date').text,
+                                                    '%Y-%m-%d %H:%M:%S'))
+        sms_list.append(sms)
+
+    return sms_list
+
+
 class ModemConnector(object):
     """
     Connector for modem, serving all methods
     """
-
-    def parse_sml_list(self, xml):
-        self.sms_list = []
-        root = ET.fromstring(xml.decode('utf-8'))
-        message_list = root.findall('*/Message')
-        for message in message_list:
-            sms = SMSMessage(index=message.find('Index').text,
-                             content=message.find('Content').text,
-                             phone_number=message.find('Phone').text,
-                             sms_date=datetime.strptime(message.find('Date').text,
-                                                        '%Y-%m-%d %H:%M:%S'))
-            self.sms_list.append(sms)
-
-        return self.sms_list
 
     def set_session_vars(self) -> None:
         """
@@ -58,8 +63,8 @@ class ModemConnector(object):
 
     def _headers(self):
         return {'Cookie': self._session,
-                   "__RequestVerificationToken": self._token,
-                   "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
+                "__RequestVerificationToken": self._token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
 
     def get_sms_list(self, read_count=20):
         xml = f"""
@@ -72,10 +77,15 @@ class ModemConnector(object):
             <UnreadPreferred>0</UnreadPreferred>
             </request>"""
         response = requests.post(self.modem_url + SMS_LIST_PATH, data=xml, headers=self._headers())
-        return self.parse_sml_list(response.content)
+        return parse_sms_list(response.content)
 
-    def sms_count(self):
-        return requests.get(self.modem_url + SMS_COUNT_PATH, headers=self._headers())
+    def sms_count_unread(self, inbox_type="local"):
+        xml = requests.get(self.modem_url + SMS_COUNT_PATH, headers=self._headers()).text
+        dictResponse = XmlTextToDict(xml, ignore_namespace=True).get_dict()
+        if inbox_type == "sim":
+            return dictResponse["response"]["SimUnread"]
+        """Default is local"""
+        return dictResponse["response"]["LocalUnread"]
 
     def delete_sms(self, index):
         xml = f"""
@@ -85,5 +95,3 @@ class ModemConnector(object):
                    </request>"""
         response = requests.post(self.modem_url + SMS_DELETE_PATH, data=xml, headers=self._headers())
         print(response)
-
-
