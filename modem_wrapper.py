@@ -9,6 +9,8 @@ import xml.etree.cElementTree as ET
 
 SESSION_PATH = 'api/webserver/SesTokInfo'
 SMS_LIST_PATH = 'api/sms/sms-list'
+SMS_DELETE_PATH = 'api/sms/delete-sms'
+SMS_COUNT_PATH = 'api/sms/smscpint'
 
 
 @dataclass()
@@ -54,6 +56,11 @@ class ModemConnector(object):
         self.sms_list = []
         self.set_session_vars()
 
+    def _headers(self):
+        return {'Cookie': self._session,
+                   "__RequestVerificationToken": self._token,
+                   "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
+
     def get_sms_list(self, read_count=20):
         xml = f"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -64,11 +71,19 @@ class ModemConnector(object):
             <Ascending>0</Ascending>
             <UnreadPreferred>0</UnreadPreferred>
             </request>"""
-
-        headers = {'Cookie': self._session,
-                   "__RequestVerificationToken": self._token,
-                   "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
-
-        response = requests.post(self.modem_url + SMS_LIST_PATH, data=xml, headers=headers)
+        response = requests.post(self.modem_url + SMS_LIST_PATH, data=xml, headers=self._headers())
         return self.parse_sml_list(response.content)
+
+    def sms_count(self):
+        return requests.get(self.modem_url + SMS_COUNT_PATH, headers=self._headers())
+
+    def delete_sms(self, index):
+        xml = f"""
+                   <?xml version="1.0" encoding="UTF-8"?>
+                   <request>
+                   <Index>{index}</Index>
+                   </request>"""
+        response = requests.post(self.modem_url + SMS_DELETE_PATH, data=xml, headers=self._headers())
+        print(response)
+
 
