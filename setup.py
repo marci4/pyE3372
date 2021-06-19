@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='pyE3372',
+    name='modem_wrapper',
     version='',
     packages=['tests'],
     url='https://github.com/marci4/pyE3372',
